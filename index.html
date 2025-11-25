@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pi Network Unified Wallet</title>
+    <title>Pi Network Pro Wallet</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
     <script type="module">
@@ -25,14 +25,34 @@
               pi: {
                 400: "#FCD535", // Pi Gold
                 500: "#DBAF14",
-                600: "#7C3AED", // Pi Purple (Approx)
+                600: "#7C3AED", // Pi Purple
                 700: "#6D28D9",
+                800: "#5B21B6",
                 900: "#4C1D95",
               },
+              gray: {
+                850: "#1f2937",
+                900: "#111827",
+                950: "#030712",
+              }
             },
             fontFamily: {
               sans: ['Inter', 'ui-sans-serif', 'system-ui'],
             },
+            animation: {
+                'fade-in': 'fadeIn 0.4s ease-out forwards',
+                'slide-up': 'slideUp 0.3s ease-out forwards',
+            },
+            keyframes: {
+                fadeIn: {
+                    '0%': { opacity: '0' },
+                    '100%': { opacity: '1' },
+                },
+                slideUp: {
+                    '0%': { opacity: '0', transform: 'translateY(20px)' },
+                    '100%': { opacity: '1', transform: 'translateY(0)' },
+                }
+            }
           },
         },
       };
@@ -40,170 +60,212 @@
     <style>
       @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
       
-      body { font-family: 'Inter', sans-serif; }
+      body { font-family: 'Inter', sans-serif; background-color: #030712; }
       
+      /* Glass effect */
+      .glass {
+        background: rgba(31, 41, 55, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
       /* Custom Loader */
       .loader {
-        border: 3px solid rgba(255,255,255,0.3);
+        border: 2px solid rgba(255,255,255,0.1);
         border-radius: 50%;
-        border-top: 3px solid #ffffff;
-        width: 20px;
-        height: 20px;
-        animation: spin 1s linear infinite;
+        border-top: 2px solid #FCD535;
+        width: 18px;
+        height: 18px;
+        animation: spin 0.8s linear infinite;
       }
       @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-      /* Transitions */
-      .fade-in { animation: fadeIn 0.3s ease-in-out; }
-      @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+      /* Scrollbar */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: #111827; }
+      ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: #4B5563; }
 
-      /* Tab Active State */
-      .tab-active { border-bottom: 2px solid #FCD535; color: #FCD535; }
+      .tab-active { border-bottom: 2px solid #FCD535; color: #FCD535; background: rgba(252, 213, 53, 0.05); }
       .tab-inactive { color: #9CA3AF; }
-      .tab-inactive:hover { color: #E5E7EB; }
+      .tab-inactive:hover { color: #E5E7EB; background: rgba(255, 255, 255, 0.03); }
     </style>
 </head>
-<body class="min-h-screen bg-gray-900 text-white selection:bg-pi-600 selection:text-white">
+<body class="min-h-screen text-white selection:bg-pi-600 selection:text-white">
 
-    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav class="glass sticky top-0 z-40 border-b-0">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
-                <div class="flex items-center gap-2">
-                    <div class="h-8 w-8 bg-gradient-to-br from-pi-400 to-pi-600 rounded-full flex items-center justify-center font-bold text-gray-900">π</div>
-                    <span class="font-bold text-xl tracking-tight">Pi Wallet</span>
+                <div class="flex items-center gap-3">
+                    <div class="h-9 w-9 bg-gradient-to-br from-pi-400 to-pi-600 rounded-full flex items-center justify-center font-bold text-gray-900 shadow-lg shadow-pi-500/20 text-lg">π</div>
+                    <span class="font-bold text-xl tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">Pi Wallet Pro</span>
                 </div>
-                <div id="wallet-status" class="hidden text-xs md:text-sm px-3 py-1 bg-gray-700 rounded-full text-green-400 flex items-center gap-2">
-                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Connected
+                <div id="wallet-status" class="hidden px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full text-green-400 text-xs font-medium flex items-center gap-2">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Mainnet
                 </div>
             </div>
         </div>
     </nav>
 
-    <main class="max-w-3xl mx-auto px-4 py-8">
+    <main class="max-w-4xl mx-auto px-4 py-8">
         
-        <div id="section-login" class="max-w-md mx-auto fade-in">
-            <div class="bg-gray-800 rounded-2xl shadow-xl border border-gray-700 p-8">
-                <div class="text-center mb-6">
+        <div id="section-login" class="max-w-md mx-auto animate-slide-up mt-10">
+            <div class="glass rounded-2xl p-8 shadow-2xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-40 h-40 bg-pi-600 rounded-full filter blur-[80px] opacity-20 -mr-10 -mt-10"></div>
+                
+                <div class="text-center mb-8 relative z-10">
                     <h2 class="text-2xl font-bold mb-2">Welcome Back</h2>
-                    <p class="text-gray-400 text-sm">Enter your Pi passphrase to access your wallet</p>
+                    <p class="text-gray-400 text-sm">Access your non-custodial Pi Network wallet</p>
                 </div>
                 
-                <form id="login-form" class="space-y-6">
+                <form id="login-form" class="space-y-6 relative z-10">
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">Passphrase</label>
-                        <div class="relative">
-                            <textarea id="passphrase-input" rows="3" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-sm focus:ring-2 focus:ring-pi-600 focus:border-transparent outline-none transition" placeholder="Alpha bravo charlie..."></textarea>
+                        <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Passphrase (24 Words)</label>
+                        <div class="relative group">
+                            <textarea id="passphrase-input" rows="3" class="w-full bg-gray-950/50 border border-gray-700 rounded-xl p-4 text-sm focus:ring-2 focus:ring-pi-500 focus:border-transparent outline-none transition-all group-hover:border-gray-600 placeholder-gray-600 resize-none" placeholder="alpha bravo charlie delta..."></textarea>
                         </div>
-                        <p id="login-error" class="text-red-500 text-xs mt-2 hidden"></p>
+                        <p id="login-error" class="text-red-400 text-xs mt-3 flex items-center gap-1 hidden">
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <span id="login-error-text">Invalid passphrase</span>
+                        </p>
                     </div>
                     
-                    <button type="submit" id="btn-login" class="w-full bg-pi-600 hover:bg-pi-700 text-white font-semibold py-3 px-4 rounded-lg transition-all flex justify-center items-center gap-2 shadow-lg shadow-pi-900/50">
-                        <span>Access Wallet</span>
+                    <button type="submit" id="btn-login" class="w-full bg-gradient-to-r from-pi-600 to-pi-700 hover:from-pi-500 hover:to-pi-600 text-white font-semibold py-3.5 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.01] active:scale-[0.99] flex justify-center items-center gap-2 shadow-lg shadow-pi-900/40">
+                        <span>Unlock Wallet</span>
                         <div class="loader hidden" id="login-loader"></div>
                     </button>
                 </form>
             </div>
         </div>
 
-        <div id="section-dashboard" class="hidden fade-in space-y-6">
+        <div id="section-dashboard" class="hidden animate-fade-in space-y-6">
             
-            <div class="bg-gray-800 rounded-2xl p-6 border border-gray-700 shadow-xl relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-pi-600 rounded-full filter blur-3xl opacity-10 transform translate-x-10 -translate-y-10"></div>
+            <div class="glass rounded-2xl p-6 relative overflow-hidden group">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-pi-600 to-purple-600 rounded-full filter blur-[100px] opacity-20 transform translate-x-20 -translate-y-20 transition duration-1000 group-hover:opacity-30"></div>
                 
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <p class="text-gray-400 text-sm">Total Available Balance</p>
-                        <h1 class="text-4xl font-bold text-white mt-1"><span id="display-balance">0.00</span> <span class="text-pi-400 text-2xl">π</span></h1>
+                <div class="relative z-10">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6">
+                        <div>
+                            <p class="text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">Available Balance</p>
+                            <div class="flex items-baseline gap-2">
+                                <h1 class="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-200" id="display-balance">0.00</h1>
+                                <span class="text-pi-400 text-2xl font-bold">π</span>
+                            </div>
+                        </div>
+                        <button onclick="refreshData()" class="mt-4 md:mt-0 p-2.5 bg-gray-800/50 hover:bg-gray-700 rounded-lg transition border border-gray-700 text-gray-400 hover:text-white" title="Refresh Data">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                        </button>
                     </div>
-                    <button onclick="refreshData()" class="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition" title="Refresh">
-                        <svg class="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                    </button>
-                </div>
 
-                <div class="mt-6 pt-6 border-t border-gray-700">
-                    <p class="text-xs text-gray-500 mb-1">Public Key</p>
-                    <div class="flex items-center gap-2 bg-gray-900/50 p-2 rounded-lg cursor-pointer hover:bg-gray-900 transition group" onclick="copyPublicKey()">
-                        <p id="display-pubkey" class="text-xs font-mono text-gray-300 truncate w-full">Loading...</p>
-                        <svg class="w-4 h-4 text-gray-500 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                    <div class="space-y-3 pt-6 border-t border-gray-700/50">
+                        <div>
+                            <p class="text-[10px] text-gray-500 uppercase font-bold mb-1">Public Key</p>
+                            <div class="flex items-center gap-2 bg-gray-950/40 p-2.5 rounded-lg border border-gray-800/50 hover:border-gray-700 transition cursor-pointer group/key" onclick="copyText(state.keypair.publicKey(), 'Public Key')">
+                                <p id="display-pubkey" class="text-xs font-mono text-gray-300 truncate w-full select-all">Loading...</p>
+                                <svg class="w-4 h-4 text-gray-600 group-hover/key:text-pi-400 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p class="text-[10px] text-red-500/70 uppercase font-bold mb-1">Secret Key (Do not share)</p>
+                            <div class="flex items-center gap-2 bg-gray-950/40 p-2.5 rounded-lg border border-red-900/20 hover:border-red-900/40 transition">
+                                <input type="password" id="display-secret" class="bg-transparent border-none w-full text-xs font-mono text-red-300 focus:ring-0 p-0" value="" readonly>
+                                <button onclick="toggleSecret()" class="text-gray-500 hover:text-white transition">
+                                    <svg id="icon-eye-closed" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" /></svg>
+                                    <svg id="icon-eye-open" class="w-4 h-4 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                </button>
+                                <button onclick="copyText(state.keypair.secret(), 'Secret Key')" class="text-gray-500 hover:text-pi-400 transition">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="flex border-b border-gray-700 space-x-4 overflow-x-auto pb-1" id="tabs-container">
-                <button onclick="switchTab('history')" id="tab-history" class="tab-active py-2 px-4 text-sm font-medium transition-colors whitespace-nowrap">History</button>
-                <button onclick="switchTab('transfer')" id="tab-transfer" class="tab-inactive py-2 px-4 text-sm font-medium transition-colors whitespace-nowrap">Transfer</button>
-                <button onclick="switchTab('unlock')" id="tab-unlock" class="tab-inactive py-2 px-4 text-sm font-medium transition-colors whitespace-nowrap">Locked Balances (Unlock)</button>
-                <button onclick="switchTab('lock')" id="tab-lock" class="tab-inactive py-2 px-4 text-sm font-medium transition-colors whitespace-nowrap">Lock Funds</button>
+            <div class="glass rounded-xl p-1.5 flex space-x-2 overflow-x-auto" id="tabs-container">
+                <button onclick="switchTab('history')" id="tab-history" class="tab-active flex-1 py-2.5 px-4 text-sm font-medium rounded-lg transition-all whitespace-nowrap">History</button>
+                <button onclick="switchTab('transfer')" id="tab-transfer" class="tab-inactive flex-1 py-2.5 px-4 text-sm font-medium rounded-lg transition-all whitespace-nowrap">Transfer</button>
+                <button onclick="switchTab('unlock')" id="tab-unlock" class="tab-inactive flex-1 py-2.5 px-4 text-sm font-medium rounded-lg transition-all whitespace-nowrap">Claimable</button>
+                <button onclick="switchTab('lock')" id="tab-lock" class="tab-inactive flex-1 py-2.5 px-4 text-sm font-medium rounded-lg transition-all whitespace-nowrap">Lock</button>
             </div>
 
-            <div id="content-history" class="tab-content fade-in">
-                <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-                    <div class="p-4 border-b border-gray-700 bg-gray-800/50">
-                        <h3 class="font-semibold text-sm">Recent Transactions</h3>
+            <div id="content-history" class="tab-content animate-slide-up">
+                <div class="glass rounded-2xl overflow-hidden min-h-[300px]">
+                    <div class="p-4 border-b border-gray-700/50 bg-gray-800/30">
+                        <h3 class="font-semibold text-sm text-gray-300">Transaction History</h3>
+                        <p class="text-xs text-gray-500">Click on any transaction for details</p>
                     </div>
-                    <div id="history-list" class="divide-y divide-gray-700 max-h-96 overflow-y-auto">
+                    <div id="history-list" class="divide-y divide-gray-800">
                         <div class="p-8 text-center text-gray-500 text-sm">Loading history...</div>
                     </div>
                 </div>
             </div>
 
-            <div id="content-transfer" class="tab-content hidden fade-in">
-                <div class="bg-gray-800 rounded-xl border border-gray-700 p-6">
-                    <h3 class="font-semibold mb-6">Send Pi</h3>
-                    <form id="transfer-form" class="space-y-4">
+            <div id="content-transfer" class="tab-content hidden animate-slide-up">
+                <div class="glass rounded-2xl p-6 md:p-8">
+                    <h3 class="font-semibold mb-6 text-lg">Send Pi</h3>
+                    <form id="transfer-form" class="space-y-5">
                         <div>
-                            <label class="block text-xs font-medium text-gray-400 mb-1">Recipient Public Key</label>
-                            <input type="text" id="transfer-dest" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-sm text-white focus:ring-2 focus:ring-pi-600 outline-none" placeholder="G..." required>
+                            <label class="block text-xs font-medium text-gray-400 mb-2">Recipient Address (Public Key)</label>
+                            <input type="text" id="transfer-dest" class="w-full bg-gray-950/50 border border-gray-700 rounded-xl p-3.5 text-sm text-white focus:ring-2 focus:ring-pi-500 focus:border-transparent outline-none transition font-mono" placeholder="G..." required>
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-400 mb-1">Amount (Pi)</label>
-                            <input type="number" step="0.0000001" id="transfer-amount" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-sm text-white focus:ring-2 focus:ring-pi-600 outline-none" placeholder="0.00" required>
+                            <label class="block text-xs font-medium text-gray-400 mb-2">Amount (Pi)</label>
+                            <input type="number" step="0.0000001" id="transfer-amount" class="w-full bg-gray-950/50 border border-gray-700 rounded-xl p-3.5 text-sm text-white focus:ring-2 focus:ring-pi-500 focus:border-transparent outline-none transition font-mono" placeholder="0.00" required>
                         </div>
-                        <button type="submit" id="btn-transfer" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg mt-2 flex justify-center items-center gap-2">
-                            <span>Send Transaction</span>
-                            <div class="loader hidden"></div>
-                        </button>
+                        <div class="pt-2">
+                            <button type="submit" id="btn-transfer" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3.5 rounded-xl transition-all flex justify-center items-center gap-2 shadow-lg shadow-blue-900/30">
+                                <span>Sign & Send Transaction</span>
+                                <div class="loader hidden"></div>
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
 
-            <div id="content-unlock" class="tab-content hidden fade-in">
-                <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-                    <div class="p-4 border-b border-gray-700 bg-gray-800/50 flex justify-between items-center">
-                        <h3 class="font-semibold text-sm">Your Locked Balances</h3>
-                        <span class="text-xs text-gray-400 bg-gray-700 px-2 py-1 rounded">Times shown in local device time</span>
+            <div id="content-unlock" class="tab-content hidden animate-slide-up">
+                <div class="glass rounded-2xl overflow-hidden min-h-[300px]">
+                    <div class="p-4 border-b border-gray-700/50 bg-gray-800/30 flex justify-between items-center">
+                        <div>
+                            <h3 class="font-semibold text-sm text-gray-300">Locked Balances</h3>
+                            <p class="text-xs text-gray-500">Unlocks based on your local device time</p>
+                        </div>
                     </div>
-                    <div id="claimable-list" class="divide-y divide-gray-700">
-                         <div class="p-8 text-center text-gray-500 text-sm">Checking for locked balances...</div>
+                    <div id="claimable-list" class="divide-y divide-gray-800">
+                         <div class="p-8 text-center text-gray-500 text-sm">Checking blockchain...</div>
                     </div>
                 </div>
             </div>
 
-            <div id="content-lock" class="tab-content hidden fade-in">
-                <div class="bg-gray-800 rounded-xl border border-gray-700 p-6">
-                    <div class="flex items-start gap-4 mb-6">
-                        <div class="p-3 bg-red-900/30 rounded-lg">
+            <div id="content-lock" class="tab-content hidden animate-slide-up">
+                <div class="glass rounded-2xl p-6 md:p-8">
+                    <div class="flex items-center gap-4 mb-6 p-4 bg-red-900/10 border border-red-900/20 rounded-xl">
+                        <div class="p-2 bg-red-500/20 rounded-lg">
                             <svg class="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                         </div>
                         <div>
-                            <h3 class="font-semibold text-white">Lock Funds</h3>
-                            <p class="text-xs text-gray-400 mt-1">Funds will be moved from "Available" to a locked state until the duration expires.</p>
+                            <h3 class="font-semibold text-white">Create Locked Balance</h3>
+                            <p class="text-xs text-gray-400">Funds are locked on-chain and cannot be recovered until duration ends.</p>
                         </div>
                     </div>
                     
-                    <form id="lock-form" class="space-y-4">
+                    <form id="lock-form" class="space-y-5">
                         <div>
-                            <label class="block text-xs font-medium text-gray-400 mb-1">Amount to Lock (Pi)</label>
-                            <input type="number" step="0.0000001" id="lock-amount" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-sm text-white focus:ring-2 focus:ring-pi-600 outline-none" placeholder="0.00" required>
+                            <label class="block text-xs font-medium text-gray-400 mb-2">Amount to Lock (Pi)</label>
+                            <input type="number" step="0.0000001" id="lock-amount" class="w-full bg-gray-950/50 border border-gray-700 rounded-xl p-3.5 text-sm text-white focus:ring-2 focus:ring-pi-500 focus:border-transparent outline-none transition font-mono" placeholder="0.00" required>
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-400 mb-1">Duration (Days)</label>
-                            <input type="number" id="lock-days" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-sm text-white focus:ring-2 focus:ring-pi-600 outline-none" placeholder="e.g. 14" required>
+                            <label class="block text-xs font-medium text-gray-400 mb-2">Duration (Days)</label>
+                            <input type="number" id="lock-days" class="w-full bg-gray-950/50 border border-gray-700 rounded-xl p-3.5 text-sm text-white focus:ring-2 focus:ring-pi-500 focus:border-transparent outline-none transition font-mono" placeholder="e.g. 14" required>
                         </div>
-                        <button type="submit" id="btn-lock" class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 rounded-lg mt-2 flex justify-center items-center gap-2">
-                            <span>Lock Funds</span>
-                            <div class="loader hidden"></div>
-                        </button>
+                        <div class="pt-2">
+                            <button type="submit" id="btn-lock" class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3.5 rounded-xl transition-all flex justify-center items-center gap-2 shadow-lg shadow-red-900/30">
+                                <span>Lock Funds</span>
+                                <div class="loader hidden"></div>
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -211,11 +273,36 @@
         </div>
     </main>
 
-    <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 border border-gray-700 text-white px-6 py-4 rounded-xl shadow-2xl transform translate-y-full transition-transform duration-300 flex items-center gap-3 z-50">
-        <div id="toast-icon"></div>
-        <div>
-            <h4 id="toast-title" class="font-bold text-sm">Notification</h4>
-            <p id="toast-msg" class="text-xs text-gray-400">Message goes here</p>
+    <div id="tx-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center px-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeModal()"></div>
+        
+        <div class="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg shadow-2xl relative z-10 animate-slide-up transform transition-all">
+            <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-white">Transaction Details</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white transition">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-6" id="modal-content">
+                <div class="flex justify-center"><div class="loader"></div></div>
+            </div>
+            
+            <div class="p-6 border-t border-gray-800 bg-gray-900/50 rounded-b-2xl">
+                <a id="modal-explorer-link" href="#" target="_blank" class="block w-full text-center py-3 bg-gray-800 hover:bg-gray-700 text-pi-400 rounded-xl transition text-sm font-medium">
+                    View on BlockExplorer
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-6 right-6 z-[60] transform translate-y-32 transition-transform duration-300">
+        <div class="bg-gray-800 border border-gray-700 text-white px-5 py-4 rounded-xl shadow-2xl flex items-center gap-4 min-w-[300px]">
+            <div id="toast-icon" class="flex-shrink-0"></div>
+            <div>
+                <h4 id="toast-title" class="font-bold text-sm">Notification</h4>
+                <p id="toast-msg" class="text-xs text-gray-400 mt-0.5">Message goes here</p>
+            </div>
         </div>
     </div>
 
@@ -223,17 +310,17 @@
         const StellarSdk = window.StellarSdk;
         
         // --- CONFIGURATION ---
-        // Change to testnet for development, mainnet for production
         const CONFIG = {
             url: 'https://api.mainnet.minepi.com',
-            networkPassphrase: 'Pi Network' 
+            networkPassphrase: 'Pi Network'
         };
 
         // Global State
         let state = {
             keypair: null,
             server: null,
-            account: null
+            account: null,
+            transactions: [] // Cache for transactions
         };
 
         // --- INIT ---
@@ -242,19 +329,37 @@
         // --- UI FUNCTIONS ---
 
         function switchTab(tabName) {
-            // Hide all content
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            // Reset tabs styling
             document.querySelectorAll('#tabs-container button').forEach(btn => {
                 btn.classList.remove('tab-active');
                 btn.classList.add('tab-inactive');
             });
 
-            // Show selected
             document.getElementById(`content-${tabName}`).classList.remove('hidden');
             const activeBtn = document.getElementById(`tab-${tabName}`);
-            activeBtn.classList.add('tab-active');
             activeBtn.classList.remove('tab-inactive');
+            activeBtn.classList.add('tab-active');
+        }
+
+        function toggleSecret() {
+            const input = document.getElementById('display-secret');
+            const eyeOpen = document.getElementById('icon-eye-open');
+            const eyeClosed = document.getElementById('icon-eye-closed');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                eyeOpen.classList.remove('hidden');
+                eyeClosed.classList.add('hidden');
+            } else {
+                input.type = 'password';
+                eyeOpen.classList.add('hidden');
+                eyeClosed.classList.remove('hidden');
+            }
+        }
+
+        async function copyText(text, label) {
+            await navigator.clipboard.writeText(text);
+            showToast('Copied', `${label} copied to clipboard`);
         }
 
         function showToast(title, msg, type = 'success') {
@@ -267,32 +372,29 @@
             msgEl.textContent = msg;
 
             if (type === 'success') {
-                iconEl.innerHTML = `<svg class="w-6 h-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>`;
+                iconEl.innerHTML = `<div class="p-2 bg-green-500/20 rounded-full"><svg class="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg></div>`;
             } else {
-                iconEl.innerHTML = `<svg class="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>`;
+                iconEl.innerHTML = `<div class="p-2 bg-red-500/20 rounded-full"><svg class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></div>`;
             }
 
-            toast.classList.remove('translate-y-full');
+            toast.classList.remove('translate-y-32');
             setTimeout(() => {
-                toast.classList.add('translate-y-full');
-            }, 5000);
-        }
-
-        async function copyPublicKey() {
-            if (state.keypair) {
-                await navigator.clipboard.writeText(state.keypair.publicKey());
-                showToast('Copied', 'Public Key copied to clipboard');
-            }
+                toast.classList.add('translate-y-32');
+            }, 4000);
         }
 
         function formatLocalTime(isoString) {
             if(!isoString) return "Unknown";
             const date = new Date(isoString);
-            return date.toLocaleString(); // Uses device's local time setting
+            return date.toLocaleString(undefined, {
+                year: 'numeric', month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
         }
 
         function toggleLoader(btnId, isLoading) {
             const btn = document.getElementById(btnId);
+            if(!btn) return;
             const loader = btn.querySelector('.loader');
             const span = btn.querySelector('span');
             
@@ -309,28 +411,92 @@
             }
         }
 
+        // --- MODAL LOGIC ---
+        function closeModal() {
+            document.getElementById('tx-modal').classList.add('hidden');
+        }
+
+        async function openTxModal(txHash, amount, isReceived, dateStr) {
+            const modal = document.getElementById('tx-modal');
+            const content = document.getElementById('modal-content');
+            const explorerLink = document.getElementById('modal-explorer-link');
+            
+            modal.classList.remove('hidden');
+            content.innerHTML = `<div class="flex flex-col items-center justify-center py-10"><div class="loader"></div><p class="text-gray-500 mt-4 text-sm">Fetching on-chain details...</p></div>`;
+            
+            try {
+                // Fetch full transaction details
+                const txDetail = await state.server.transactions().transaction(txHash).call();
+                const operations = await txDetail.operations();
+                const op = operations.records[0]; // Assuming simple payment usually has 1 op or is the relevant one
+                
+                const fee = txDetail.fee_charged; // In stroops
+                const feePi = (fee / 10000000).toFixed(7);
+                const sender = op.source_account || txDetail.source_account;
+                const receiver = op.to || (op.type === 'create_account' ? op.account : 'N/A');
+                const memo = txDetail.memo_type !== 'none' ? txDetail.memo : 'No Memo';
+
+                const colorClass = isReceived ? 'text-green-400' : 'text-gray-300';
+                const sign = isReceived ? '+' : '-';
+
+                content.innerHTML = `
+                    <div class="text-center mb-6">
+                        <p class="text-sm text-gray-500 mb-1">Amount</p>
+                        <h2 class="text-4xl font-bold ${colorClass}">${sign}${amount} π</h2>
+                        <p class="text-xs text-gray-600 mt-2">${dateStr}</p>
+                    </div>
+
+                    <div class="space-y-4 bg-gray-950/30 p-4 rounded-xl border border-gray-800">
+                         <div class="flex justify-between items-start">
+                            <span class="text-gray-500 text-xs">Transaction Hash</span>
+                            <span class="text-gray-300 text-xs font-mono text-right w-40 truncate cursor-pointer hover:text-white" onclick="copyText('${txHash}', 'Hash')">${txHash}</span>
+                        </div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-gray-500 text-xs">Sender</span>
+                            <span class="text-gray-300 text-xs font-mono text-right w-40 truncate cursor-pointer hover:text-white" onclick="copyText('${sender}', 'Sender Address')">${sender}</span>
+                        </div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-gray-500 text-xs">Receiver</span>
+                            <span class="text-gray-300 text-xs font-mono text-right w-40 truncate cursor-pointer hover:text-white" onclick="copyText('${receiver}', 'Receiver Address')">${receiver}</span>
+                        </div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-gray-500 text-xs">Fee Paid</span>
+                            <span class="text-gray-300 text-xs font-mono">${feePi} π</span>
+                        </div>
+                        <div class="flex justify-between items-start">
+                            <span class="text-gray-500 text-xs">Memo</span>
+                            <span class="text-gray-300 text-xs">${memo}</span>
+                        </div>
+                    </div>
+                `;
+
+                explorerLink.href = `https://blockexplorer.minepi.com/mainnet/transactions/${txHash}`;
+
+            } catch(e) {
+                console.error(e);
+                content.innerHTML = `<p class="text-red-500 text-center">Failed to load details.</p>`;
+            }
+        }
+
         // --- CORE LOGIC ---
 
         async function refreshData() {
             if (!state.keypair) return;
             
-            // Re-fetch account
             try {
+                // Fetch Account
                 state.account = await state.server.loadAccount(state.keypair.publicKey());
                 
                 // Update Balance
                 const bal = state.account.balances.find(b => b.asset_type === 'native');
-                document.getElementById('display-balance').textContent = bal ? bal.balance : "0.00";
+                document.getElementById('display-balance').textContent = bal ? parseFloat(bal.balance).toFixed(2) : "0.00";
 
-                // Update History
-                loadHistory();
-
-                // Update Claimables
-                loadClaimables();
+                // Update Lists
+                await Promise.all([loadHistory(), loadClaimables()]);
 
             } catch (e) {
                 console.error(e);
-                showToast("Error", "Failed to refresh data", "error");
+                showToast("Connection Error", "Failed to refresh wallet data", "error");
             }
         }
 
@@ -340,69 +506,76 @@
                 const derived = window.ed25519HdKey.derivePath("m/44'/314159'/0'", new Uint8Array(seed));
                 state.keypair = StellarSdk.Keypair.fromRawEd25519Seed(Uint8Array.from(derived.key));
                 
-                // Load Account Initial Data
+                // UI Updates for Keys
+                document.getElementById('display-pubkey').textContent = state.keypair.publicKey();
+                document.getElementById('display-secret').value = state.keypair.secret();
+                
                 await refreshData();
                 
-                // UI Updates
-                document.getElementById('display-pubkey').textContent = state.keypair.publicKey();
                 document.getElementById('section-login').classList.add('hidden');
                 document.getElementById('section-dashboard').classList.remove('hidden');
                 document.getElementById('wallet-status').classList.remove('hidden');
 
             } catch (e) {
                 console.error(e);
-                throw new Error("Invalid Passphrase or Account Not Found");
+                throw e;
             }
         }
 
         async function loadHistory() {
             const container = document.getElementById('history-list');
             try {
-                const payments = await state.server.payments().forAccount(state.keypair.publicKey()).limit(10).order('desc').call();
+                const response = await state.server.payments().forAccount(state.keypair.publicKey()).limit(15).order('desc').call();
                 
-                if (payments.records.length === 0) {
+                if (response.records.length === 0) {
                     container.innerHTML = '<div class="p-8 text-center text-gray-500 text-sm">No transactions found</div>';
                     return;
                 }
 
                 let html = '';
-                payments.records.forEach(p => {
-                    const isReceived = p.to === state.keypair.publicKey();
-                    const amount = p.amount;
+                response.records.forEach(p => {
+                    // Check if it's a payment or create_account
+                    if (p.type !== 'payment' && p.type !== 'create_account') return;
+
+                    const isReceived = p.type === 'create_account' ? true : (p.to === state.keypair.publicKey());
+                    const amount = p.type === 'create_account' ? p.starting_balance : p.amount;
                     const date = new Date(p.created_at).toLocaleString();
+                    const txHash = p.transaction_hash;
                     
+                    // Add click handler to open modal
                     html += `
-                    <div class="p-4 flex justify-between items-center hover:bg-gray-700/30 transition">
-                        <div class="flex items-center gap-3">
-                            <div class="p-2 rounded-full ${isReceived ? 'bg-green-900/30 text-green-500' : 'bg-red-900/30 text-red-500'}">
-                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div class="p-4 flex justify-between items-center hover:bg-gray-700/20 transition cursor-pointer group" 
+                         onclick="openTxModal('${txHash}', '${amount}', ${isReceived}, '${date}')">
+                        <div class="flex items-center gap-4">
+                            <div class="p-2.5 rounded-xl ${isReceived ? 'bg-green-500/10 text-green-500' : 'bg-gray-700/50 text-gray-400'} group-hover:scale-110 transition">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     ${isReceived 
                                         ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />' 
                                         : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />'}
                                 </svg>
                             </div>
                             <div>
-                                <p class="text-sm font-medium text-white">${isReceived ? 'Received' : 'Sent'}</p>
+                                <p class="text-sm font-medium text-gray-200 group-hover:text-white">${isReceived ? 'Received' : 'Sent'}</p>
                                 <p class="text-xs text-gray-500">${date}</p>
                             </div>
                         </div>
                         <div class="text-right">
-                            <p class="font-mono text-sm ${isReceived ? 'text-green-400' : 'text-gray-300'}">
-                                ${isReceived ? '+' : '-'}${amount} π
+                            <p class="font-mono text-sm font-medium ${isReceived ? 'text-green-400' : 'text-gray-300'}">
+                                ${isReceived ? '+' : '-'}${parseFloat(amount).toFixed(2)} π
                             </p>
                         </div>
                     </div>`;
                 });
                 container.innerHTML = html;
             } catch (e) {
-                container.innerHTML = '<div class="p-4 text-red-500 text-xs">Error loading history</div>';
+                console.error(e);
             }
         }
 
         async function loadClaimables() {
             const container = document.getElementById('claimable-list');
             try {
-                const balances = await state.server.claimableBalances().claimant(state.keypair.publicKey()).call();
+                const balances = await state.server.claimableBalances().claimant(state.keypair.publicKey()).limit(50).call();
                 
                 if (balances.records.length === 0) {
                     container.innerHTML = '<div class="p-8 text-center text-gray-500 text-sm">No locked balances found</div>';
@@ -414,35 +587,37 @@
 
                 balances.records.forEach(record => {
                     const amount = record.amount;
-                    // Find the predicate time
+                    // Find Predicate
                     const claimant = record.claimants.find(c => c.destination === state.keypair.publicKey());
+                    
+                    // Logic to find Date based on Pi Network standard predicates
                     let unlockTime = null;
-                    let isUnlocked = false;
-
-                    // Parse basic predicates (AbsBefore)
-                    // Note: Pi Network usually uses Not(Before(Time)) structure for locking
                     try {
-                        if (claimant.predicate && claimant.predicate.not && claimant.predicate.not.abs_before) {
+                         // Common Pi Pattern: Not(Before(Time))
+                         if (claimant.predicate && claimant.predicate.not && claimant.predicate.not.abs_before) {
                             unlockTime = new Date(claimant.predicate.not.abs_before);
-                        } else if (claimant.predicate && claimant.predicate.abs_before) {
-                            // Rare case where it's just "claim before X"
+                         } 
+                         // Fallback patterns
+                         else if (claimant.predicate && claimant.predicate.abs_before) {
                             unlockTime = new Date(claimant.predicate.abs_before); 
-                        }
-                    } catch(e) { console.log(e); }
+                         }
+                    } catch(e) { }
 
-                    if (unlockTime) {
-                        isUnlocked = now >= unlockTime;
-                    }
+                    const isUnlocked = unlockTime ? (now >= unlockTime) : false;
+                    const dateStr = formatLocalTime(unlockTime ? unlockTime.toISOString() : null);
 
                     const div = document.createElement('div');
-                    div.className = "p-4 flex flex-col sm:flex-row justify-between items-center gap-4 hover:bg-gray-700/30";
+                    div.className = "p-4 flex flex-col sm:flex-row justify-between items-center gap-4 hover:bg-gray-700/10 transition";
+                    
                     div.innerHTML = `
-                        <div class="flex items-center gap-4">
-                            <div class="p-2 bg-gray-700 rounded text-pi-400 font-bold">π</div>
+                        <div class="flex items-center gap-4 w-full sm:w-auto">
+                            <div class="p-2 bg-gray-800 rounded-lg text-pi-400 font-bold border border-gray-700">π</div>
                             <div>
-                                <p class="font-bold text-white">${amount} <span class="text-xs font-normal text-gray-400">PI</span></p>
-                                <p class="text-xs ${isUnlocked ? 'text-green-400' : 'text-yellow-500'}">
-                                    ${unlockTime ? (isUnlocked ? 'Unlocked since ' + formatLocalTime(unlockTime) : 'Locks until ' + formatLocalTime(unlockTime)) : 'Unknown Lock Time'}
+                                <p class="font-bold text-gray-200">${amount} <span class="text-xs font-normal text-gray-500">PI</span></p>
+                                <p class="text-xs ${isUnlocked ? 'text-green-400' : 'text-yellow-500'} flex items-center gap-1">
+                                    ${isUnlocked 
+                                        ? `<svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg> Unlocked` 
+                                        : `<svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Unlock: ${dateStr}`}
                                 </p>
                             </div>
                         </div>
@@ -450,11 +625,11 @@
 
                     const btn = document.createElement('button');
                     if (isUnlocked) {
-                        btn.className = "px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition shadow-lg shadow-green-900/20";
+                        btn.className = "w-full sm:w-auto px-5 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white text-xs font-bold uppercase tracking-wider rounded-lg transition shadow-lg shadow-green-900/20";
                         btn.textContent = "Claim to Balance";
                         btn.onclick = () => claimBalance(record.id, btn);
                     } else {
-                        btn.className = "px-4 py-2 bg-gray-700 text-gray-500 text-sm rounded-lg cursor-not-allowed";
+                        btn.className = "w-full sm:w-auto px-5 py-2 bg-gray-800/50 border border-gray-700 text-gray-500 text-xs font-bold uppercase tracking-wider rounded-lg cursor-not-allowed";
                         btn.textContent = "Locked";
                         btn.disabled = true;
                     }
@@ -465,43 +640,57 @@
 
             } catch (e) {
                 console.error(e);
-                container.innerHTML = '<div class="p-4 text-red-500 text-xs">Error loading claimables</div>';
             }
         }
-
-        // --- OPERATIONS ---
 
         async function claimBalance(balanceId, btnElement) {
             const originalText = btnElement.textContent;
             btnElement.textContent = "Claiming...";
+            btnElement.classList.add('animate-pulse');
             btnElement.disabled = true;
 
             try {
-                const op = StellarSdk.Operation.claimClaimableBalance({
-                    balanceId: balanceId
-                });
-
-                const tx = new StellarSdk.TransactionBuilder(state.account, {
-                    fee: await state.server.fetchBaseFee(),
+                // FIXED LOGIC BASED ON SOURCE CODE 1
+                const fee = await state.server.fetchBaseFee();
+                
+                const transaction = new StellarSdk.TransactionBuilder(state.account, {
+                    fee: fee,
                     networkPassphrase: CONFIG.networkPassphrase
                 })
-                .addOperation(op)
+                .addOperation(StellarSdk.Operation.claimClaimableBalance({
+                    balanceId: balanceId,
+                    source: state.keypair.publicKey() // Explicitly setting source
+                }))
                 .setTimeout(30)
                 .build();
 
-                tx.sign(state.keypair);
-                await state.server.submitTransaction(tx);
+                transaction.sign(state.keypair);
+                const result = await state.server.submitTransaction(transaction);
 
-                showToast("Success", "Balance unlocked and moved to available!");
-                await refreshData(); // Auto refresh
+                showToast("Success", "Balance unlocked successfully!");
+                
+                // Add a small delay then refresh
+                setTimeout(async () => {
+                    await refreshData();
+                }, 2000);
 
             } catch (e) {
-                console.error(e);
-                showToast("Failed", "Could not claim balance. Check fees.", "error");
+                console.error("Claim Error:", e);
+                let msg = "Claim failed. Try again.";
+                
+                if (e.response && e.response.data && e.response.data.extras) {
+                    const codes = e.response.data.extras.result_codes;
+                    if(codes.transaction === 'tx_insufficient_balance') msg = "No Pi for Fees (Need 0.00001 Pi)";
+                }
+                
+                showToast("Error", msg, "error");
                 btnElement.textContent = originalText;
+                btnElement.classList.remove('animate-pulse');
                 btnElement.disabled = false;
             }
         }
+
+        // --- FORM HANDLERS ---
 
         document.getElementById('transfer-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -526,14 +715,14 @@
                 tx.sign(state.keypair);
                 const result = await state.server.submitTransaction(tx);
                 
-                showToast("Transfer Sent", `Hash: ${result.hash.substring(0,10)}...`);
+                showToast("Sent", `Hash: ${result.hash.substring(0,8)}...`);
                 document.getElementById('transfer-form').reset();
                 await refreshData();
                 switchTab('history');
 
             } catch (e) {
                 console.error(e);
-                showToast("Error", "Transaction failed. Check destination or balance.", "error");
+                showToast("Error", "Transaction failed. Check address or balance.", "error");
             } finally {
                 toggleLoader('btn-transfer', false);
             }
@@ -547,10 +736,8 @@
             toggleLoader('btn-lock', true);
 
             try {
-                // Logic: Current Time + Days
                 const unlockTime = Math.floor(Date.now() / 1000) + (days * 24 * 60 * 60);
                 
-                // Predicate: NOT (Time < UnlockTime) => Only valid AFTER UnlockTime
                 const predicate = StellarSdk.Claimant.predicateNot(
                     StellarSdk.Claimant.predicateBeforeAbsoluteTime(unlockTime.toString())
                 );
@@ -572,7 +759,7 @@
                 tx.sign(state.keypair);
                 await state.server.submitTransaction(tx);
 
-                showToast("Locked", `${amount} Pi locked for ${days} days.`);
+                showToast("Locked", `${amount} Pi locked successfully.`);
                 document.getElementById('lock-form').reset();
                 await refreshData();
                 switchTab('unlock');
@@ -589,9 +776,10 @@
             e.preventDefault();
             const pass = document.getElementById('passphrase-input').value.trim();
             const errorEl = document.getElementById('login-error');
+            const errorText = document.getElementById('login-error-text');
             
-            if (pass.length < 15) {
-                errorEl.textContent = "Passphrase seems too short.";
+            if (pass.split(' ').length < 12) {
+                errorText.textContent = "Passphrase looks too short (Need 24 words)";
                 errorEl.classList.remove('hidden');
                 return;
             }
@@ -602,7 +790,7 @@
             try {
                 await login(pass);
             } catch (err) {
-                errorEl.textContent = "Could not access wallet. Please check your passphrase.";
+                errorText.textContent = "Invalid Passphrase or Connection Failed";
                 errorEl.classList.remove('hidden');
             } finally {
                 toggleLoader('btn-login', false);
