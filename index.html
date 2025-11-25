@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pi Network Unified Wallet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script type="module">
+      import * as webBip39 from "https://cdn.jsdelivr.net/npm/web-bip39@0.0.3/+esm";
+      window.webBip39 = webBip39;
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/stellar-sdk@11.2.2/dist/stellar-sdk.min.js"></script>
+    <script type="module">
+      import ed25519HdKey from "https://cdn.jsdelivr.net/npm/ed25519-hd-key@1.3.0/+esm";
+      window.ed25519HdKey = ed25519HdKey;
+    </script>
+
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              pi: {
+                400: "#FCD535", // Pi Gold
+                500: "#DBAF14",
+                600: "#7C3AED", // Pi Purple (Approx)
+                700: "#6D28D9",
+                900: "#4C1D95",
+              },
+            },
+            fontFamily: {
+              sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+      
+      body { font-family: 'Inter', sans-serif; }
+      
+      /* Custom Loader */
+      .loader {
+        border: 3px solid rgba(255,255,255,0.3);
+        border-radius: 50%;
+        border-top: 3px solid #ffffff;
+        width: 20px;
+        height: 20px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+      /* Transitions */
+      .fade-in { animation: fadeIn 0.3s ease-in-out; }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+      /* Tab Active State */
+      .tab-active { border-bottom: 2px solid #FCD535; color: #FCD535; }
+      .tab-inactive { color: #9CA3AF; }
+      .tab-inactive:hover { color: #E5E7EB; }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-900 text-white selection:bg-pi-600 selection:text-white">
+
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-2">
+                    <div class="h-8 w-8 bg-gradient-to-br from-pi-400 to-pi-600 rounded-full flex items-center justify-center font-bold text-gray-900">π</div>
+                    <span class="font-bold text-xl tracking-tight">Pi Wallet</span>
+                </div>
+                <div id="wallet-status" class="hidden text-xs md:text-sm px-3 py-1 bg-gray-700 rounded-full text-green-400 flex items-center gap-2">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Connected
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-3xl mx-auto px-4 py-8">
+        
+        <div id="section-login" class="max-w-md mx-auto fade-in">
+            <div class="bg-gray-800 rounded-2xl shadow-xl border border-gray-700 p-8">
+                <div class="text-center mb-6">
+                    <h2 class="text-2xl font-bold mb-2">Welcome Back</h2>
+                    <p class="text-gray-400 text-sm">Enter your Pi passphrase to access your wallet</p>
+                </div>
+                
+                <form id="login-form" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Passphrase</label>
+                        <div class="relative">
+                            <textarea id="passphrase-input" rows="3" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-sm focus:ring-2 focus:ring-pi-600 focus:border-transparent outline-none transition" placeholder="Alpha bravo charlie..."></textarea>
+                        </div>
+                        <p id="login-error" class="text-red-500 text-xs mt-2 hidden"></p>
+                    </div>
+                    
+                    <button type="submit" id="btn-login" class="w-full bg-pi-600 hover:bg-pi-700 text-white font-semibold py-3 px-4 rounded-lg transition-all flex justify-center items-center gap-2 shadow-lg shadow-pi-900/50">
+                        <span>Access Wallet</span>
+                        <div class="loader hidden" id="login-loader"></div>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div id="section-dashboard" class="hidden fade-in space-y-6">
+            
+            <div class="bg-gray-800 rounded-2xl p-6 border border-gray-700 shadow-xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-pi-600 rounded-full filter blur-3xl opacity-10 transform translate-x-10 -translate-y-10"></div>
+                
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <p class="text-gray-400 text-sm">Total Available Balance</p>
+                        <h1 class="text-4xl font-bold text-white mt-1"><span id="display-balance">0.00</span> <span class="text-pi-400 text-2xl">π</span></h1>
+                    </div>
+                    <button onclick="refreshData()" class="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition" title="Refresh">
+                        <svg class="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    </button>
+                </div>
+
+                <div class="mt-6 pt-6 border-t border-gray-700">
+                    <p class="text-xs text-gray-500 mb-1">Public Key</p>
+                    <div class="flex items-center gap-2 bg-gray-900/50 p-2 rounded-lg cursor-pointer hover:bg-gray-900 transition group" onclick="copyPublicKey()">
+                        <p id="display-pubkey" class="text-xs font-mono text-gray-300 truncate w-full">Loading...</p>
+                        <svg class="w-4 h-4 text-gray-500 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex border-b border-gray-700 space-x-4 overflow-x-auto pb-1" id="tabs-container">
+                <button onclick="switchTab('history')" id="tab-history" class="tab-active py-2 px-4 text-sm font-medium transition-colors whitespace-nowrap">History</button>
+                <button onclick="switchTab('transfer')" id="tab-transfer" class="tab-inactive py-2 px-4 text-sm font-medium transition-colors whitespace-nowrap">Transfer</button>
+                <button onclick="switchTab('unlock')" id="tab-unlock" class="tab-inactive py-2 px-4 text-sm font-medium transition-colors whitespace-nowrap">Locked Balances (Unlock)</button>
+                <button onclick="switchTab('lock')" id="tab-lock" class="tab-inactive py-2 px-4 text-sm font-medium transition-colors whitespace-nowrap">Lock Funds</button>
+            </div>
+
+            <div id="content-history" class="tab-content fade-in">
+                <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+                    <div class="p-4 border-b border-gray-700 bg-gray-800/50">
+                        <h3 class="font-semibold text-sm">Recent Transactions</h3>
+                    </div>
+                    <div id="history-list" class="divide-y divide-gray-700 max-h-96 overflow-y-auto">
+                        <div class="p-8 text-center text-gray-500 text-sm">Loading history...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="content-transfer" class="tab-content hidden fade-in">
+                <div class="bg-gray-800 rounded-xl border border-gray-700 p-6">
+                    <h3 class="font-semibold mb-6">Send Pi</h3>
+                    <form id="transfer-form" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Recipient Public Key</label>
+                            <input type="text" id="transfer-dest" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-sm text-white focus:ring-2 focus:ring-pi-600 outline-none" placeholder="G..." required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Amount (Pi)</label>
+                            <input type="number" step="0.0000001" id="transfer-amount" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-sm text-white focus:ring-2 focus:ring-pi-600 outline-none" placeholder="0.00" required>
+                        </div>
+                        <button type="submit" id="btn-transfer" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg mt-2 flex justify-center items-center gap-2">
+                            <span>Send Transaction</span>
+                            <div class="loader hidden"></div>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="content-unlock" class="tab-content hidden fade-in">
+                <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+                    <div class="p-4 border-b border-gray-700 bg-gray-800/50 flex justify-between items-center">
+                        <h3 class="font-semibold text-sm">Your Locked Balances</h3>
+                        <span class="text-xs text-gray-400 bg-gray-700 px-2 py-1 rounded">Times shown in local device time</span>
+                    </div>
+                    <div id="claimable-list" class="divide-y divide-gray-700">
+                         <div class="p-8 text-center text-gray-500 text-sm">Checking for locked balances...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="content-lock" class="tab-content hidden fade-in">
+                <div class="bg-gray-800 rounded-xl border border-gray-700 p-6">
+                    <div class="flex items-start gap-4 mb-6">
+                        <div class="p-3 bg-red-900/30 rounded-lg">
+                            <svg class="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-white">Lock Funds</h3>
+                            <p class="text-xs text-gray-400 mt-1">Funds will be moved from "Available" to a locked state until the duration expires.</p>
+                        </div>
+                    </div>
+                    
+                    <form id="lock-form" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Amount to Lock (Pi)</label>
+                            <input type="number" step="0.0000001" id="lock-amount" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-sm text-white focus:ring-2 focus:ring-pi-600 outline-none" placeholder="0.00" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Duration (Days)</label>
+                            <input type="number" id="lock-days" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-sm text-white focus:ring-2 focus:ring-pi-600 outline-none" placeholder="e.g. 14" required>
+                        </div>
+                        <button type="submit" id="btn-lock" class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 rounded-lg mt-2 flex justify-center items-center gap-2">
+                            <span>Lock Funds</span>
+                            <div class="loader hidden"></div>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 border border-gray-700 text-white px-6 py-4 rounded-xl shadow-2xl transform translate-y-full transition-transform duration-300 flex items-center gap-3 z-50">
+        <div id="toast-icon"></div>
+        <div>
+            <h4 id="toast-title" class="font-bold text-sm">Notification</h4>
+            <p id="toast-msg" class="text-xs text-gray-400">Message goes here</p>
+        </div>
+    </div>
+
+    <script>
+        const StellarSdk = window.StellarSdk;
+        
+        // --- CONFIGURATION ---
+        // Change to testnet for development, mainnet for production
+        const CONFIG = {
+            url: 'https://api.mainnet.minepi.com',
+            networkPassphrase: 'Pi Network' 
+        };
+
+        // Global State
+        let state = {
+            keypair: null,
+            server: null,
+            account: null
+        };
+
+        // --- INIT ---
+        state.server = new StellarSdk.Horizon.Server(CONFIG.url);
+
+        // --- UI FUNCTIONS ---
+
+        function switchTab(tabName) {
+            // Hide all content
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            // Reset tabs styling
+            document.querySelectorAll('#tabs-container button').forEach(btn => {
+                btn.classList.remove('tab-active');
+                btn.classList.add('tab-inactive');
+            });
+
+            // Show selected
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            activeBtn.classList.add('tab-active');
+            activeBtn.classList.remove('tab-inactive');
+        }
+
+        function showToast(title, msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            const titleEl = document.getElementById('toast-title');
+            const msgEl = document.getElementById('toast-msg');
+            const iconEl = document.getElementById('toast-icon');
+
+            titleEl.textContent = title;
+            msgEl.textContent = msg;
+
+            if (type === 'success') {
+                iconEl.innerHTML = `<svg class="w-6 h-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>`;
+            } else {
+                iconEl.innerHTML = `<svg class="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>`;
+            }
+
+            toast.classList.remove('translate-y-full');
+            setTimeout(() => {
+                toast.classList.add('translate-y-full');
+            }, 5000);
+        }
+
+        async function copyPublicKey() {
+            if (state.keypair) {
+                await navigator.clipboard.writeText(state.keypair.publicKey());
+                showToast('Copied', 'Public Key copied to clipboard');
+            }
+        }
+
+        function formatLocalTime(isoString) {
+            if(!isoString) return "Unknown";
+            const date = new Date(isoString);
+            return date.toLocaleString(); // Uses device's local time setting
+        }
+
+        function toggleLoader(btnId, isLoading) {
+            const btn = document.getElementById(btnId);
+            const loader = btn.querySelector('.loader');
+            const span = btn.querySelector('span');
+            
+            if (isLoading) {
+                btn.disabled = true;
+                btn.classList.add('opacity-75', 'cursor-not-allowed');
+                loader.classList.remove('hidden');
+                span.classList.add('hidden');
+            } else {
+                btn.disabled = false;
+                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                loader.classList.add('hidden');
+                span.classList.remove('hidden');
+            }
+        }
+
+        // --- CORE LOGIC ---
+
+        async function refreshData() {
+            if (!state.keypair) return;
+            
+            // Re-fetch account
+            try {
+                state.account = await state.server.loadAccount(state.keypair.publicKey());
+                
+                // Update Balance
+                const bal = state.account.balances.find(b => b.asset_type === 'native');
+                document.getElementById('display-balance').textContent = bal ? bal.balance : "0.00";
+
+                // Update History
+                loadHistory();
+
+                // Update Claimables
+                loadClaimables();
+
+            } catch (e) {
+                console.error(e);
+                showToast("Error", "Failed to refresh data", "error");
+            }
+        }
+
+        async function login(passphrase) {
+            try {
+                const seed = await window.webBip39.mnemonicToSeed(passphrase);
+                const derived = window.ed25519HdKey.derivePath("m/44'/314159'/0'", new Uint8Array(seed));
+                state.keypair = StellarSdk.Keypair.fromRawEd25519Seed(Uint8Array.from(derived.key));
+                
+                // Load Account Initial Data
+                await refreshData();
+                
+                // UI Updates
+                document.getElementById('display-pubkey').textContent = state.keypair.publicKey();
+                document.getElementById('section-login').classList.add('hidden');
+                document.getElementById('section-dashboard').classList.remove('hidden');
+                document.getElementById('wallet-status').classList.remove('hidden');
+
+            } catch (e) {
+                console.error(e);
+                throw new Error("Invalid Passphrase or Account Not Found");
+            }
+        }
+
+        async function loadHistory() {
+            const container = document.getElementById('history-list');
+            try {
+                const payments = await state.server.payments().forAccount(state.keypair.publicKey()).limit(10).order('desc').call();
+                
+                if (payments.records.length === 0) {
+                    container.innerHTML = '<div class="p-8 text-center text-gray-500 text-sm">No transactions found</div>';
+                    return;
+                }
+
+                let html = '';
+                payments.records.forEach(p => {
+                    const isReceived = p.to === state.keypair.publicKey();
+                    const amount = p.amount;
+                    const date = new Date(p.created_at).toLocaleString();
+                    
+                    html += `
+                    <div class="p-4 flex justify-between items-center hover:bg-gray-700/30 transition">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 rounded-full ${isReceived ? 'bg-green-900/30 text-green-500' : 'bg-red-900/30 text-red-500'}">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    ${isReceived 
+                                        ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />' 
+                                        : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />'}
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-white">${isReceived ? 'Received' : 'Sent'}</p>
+                                <p class="text-xs text-gray-500">${date}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-mono text-sm ${isReceived ? 'text-green-400' : 'text-gray-300'}">
+                                ${isReceived ? '+' : '-'}${amount} π
+                            </p>
+                        </div>
+                    </div>`;
+                });
+                container.innerHTML = html;
+            } catch (e) {
+                container.innerHTML = '<div class="p-4 text-red-500 text-xs">Error loading history</div>';
+            }
+        }
+
+        async function loadClaimables() {
+            const container = document.getElementById('claimable-list');
+            try {
+                const balances = await state.server.claimableBalances().claimant(state.keypair.publicKey()).call();
+                
+                if (balances.records.length === 0) {
+                    container.innerHTML = '<div class="p-8 text-center text-gray-500 text-sm">No locked balances found</div>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                const now = new Date();
+
+                balances.records.forEach(record => {
+                    const amount = record.amount;
+                    // Find the predicate time
+                    const claimant = record.claimants.find(c => c.destination === state.keypair.publicKey());
+                    let unlockTime = null;
+                    let isUnlocked = false;
+
+                    // Parse basic predicates (AbsBefore)
+                    // Note: Pi Network usually uses Not(Before(Time)) structure for locking
+                    try {
+                        if (claimant.predicate && claimant.predicate.not && claimant.predicate.not.abs_before) {
+                            unlockTime = new Date(claimant.predicate.not.abs_before);
+                        } else if (claimant.predicate && claimant.predicate.abs_before) {
+                            // Rare case where it's just "claim before X"
+                            unlockTime = new Date(claimant.predicate.abs_before); 
+                        }
+                    } catch(e) { console.log(e); }
+
+                    if (unlockTime) {
+                        isUnlocked = now >= unlockTime;
+                    }
+
+                    const div = document.createElement('div');
+                    div.className = "p-4 flex flex-col sm:flex-row justify-between items-center gap-4 hover:bg-gray-700/30";
+                    div.innerHTML = `
+                        <div class="flex items-center gap-4">
+                            <div class="p-2 bg-gray-700 rounded text-pi-400 font-bold">π</div>
+                            <div>
+                                <p class="font-bold text-white">${amount} <span class="text-xs font-normal text-gray-400">PI</span></p>
+                                <p class="text-xs ${isUnlocked ? 'text-green-400' : 'text-yellow-500'}">
+                                    ${unlockTime ? (isUnlocked ? 'Unlocked since ' + formatLocalTime(unlockTime) : 'Locks until ' + formatLocalTime(unlockTime)) : 'Unknown Lock Time'}
+                                </p>
+                            </div>
+                        </div>
+                    `;
+
+                    const btn = document.createElement('button');
+                    if (isUnlocked) {
+                        btn.className = "px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition shadow-lg shadow-green-900/20";
+                        btn.textContent = "Claim to Balance";
+                        btn.onclick = () => claimBalance(record.id, btn);
+                    } else {
+                        btn.className = "px-4 py-2 bg-gray-700 text-gray-500 text-sm rounded-lg cursor-not-allowed";
+                        btn.textContent = "Locked";
+                        btn.disabled = true;
+                    }
+
+                    div.appendChild(btn);
+                    container.appendChild(div);
+                });
+
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = '<div class="p-4 text-red-500 text-xs">Error loading claimables</div>';
+            }
+        }
+
+        // --- OPERATIONS ---
+
+        async function claimBalance(balanceId, btnElement) {
+            const originalText = btnElement.textContent;
+            btnElement.textContent = "Claiming...";
+            btnElement.disabled = true;
+
+            try {
+                const op = StellarSdk.Operation.claimClaimableBalance({
+                    balanceId: balanceId
+                });
+
+                const tx = new StellarSdk.TransactionBuilder(state.account, {
+                    fee: await state.server.fetchBaseFee(),
+                    networkPassphrase: CONFIG.networkPassphrase
+                })
+                .addOperation(op)
+                .setTimeout(30)
+                .build();
+
+                tx.sign(state.keypair);
+                await state.server.submitTransaction(tx);
+
+                showToast("Success", "Balance unlocked and moved to available!");
+                await refreshData(); // Auto refresh
+
+            } catch (e) {
+                console.error(e);
+                showToast("Failed", "Could not claim balance. Check fees.", "error");
+                btnElement.textContent = originalText;
+                btnElement.disabled = false;
+            }
+        }
+
+        document.getElementById('transfer-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const dest = document.getElementById('transfer-dest').value.trim();
+            const amount = document.getElementById('transfer-amount').value;
+            
+            toggleLoader('btn-transfer', true);
+
+            try {
+                const tx = new StellarSdk.TransactionBuilder(state.account, {
+                    fee: await state.server.fetchBaseFee(),
+                    networkPassphrase: CONFIG.networkPassphrase
+                })
+                .addOperation(StellarSdk.Operation.payment({
+                    destination: dest,
+                    asset: StellarSdk.Asset.native(),
+                    amount: amount.toString()
+                }))
+                .setTimeout(30)
+                .build();
+
+                tx.sign(state.keypair);
+                const result = await state.server.submitTransaction(tx);
+                
+                showToast("Transfer Sent", `Hash: ${result.hash.substring(0,10)}...`);
+                document.getElementById('transfer-form').reset();
+                await refreshData();
+                switchTab('history');
+
+            } catch (e) {
+                console.error(e);
+                showToast("Error", "Transaction failed. Check destination or balance.", "error");
+            } finally {
+                toggleLoader('btn-transfer', false);
+            }
+        });
+
+        document.getElementById('lock-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const amount = document.getElementById('lock-amount').value;
+            const days = parseInt(document.getElementById('lock-days').value);
+
+            toggleLoader('btn-lock', true);
+
+            try {
+                // Logic: Current Time + Days
+                const unlockTime = Math.floor(Date.now() / 1000) + (days * 24 * 60 * 60);
+                
+                // Predicate: NOT (Time < UnlockTime) => Only valid AFTER UnlockTime
+                const predicate = StellarSdk.Claimant.predicateNot(
+                    StellarSdk.Claimant.predicateBeforeAbsoluteTime(unlockTime.toString())
+                );
+
+                const tx = new StellarSdk.TransactionBuilder(state.account, {
+                    fee: await state.server.fetchBaseFee(),
+                    networkPassphrase: CONFIG.networkPassphrase
+                })
+                .addOperation(StellarSdk.Operation.createClaimableBalance({
+                    asset: StellarSdk.Asset.native(),
+                    amount: amount.toString(),
+                    claimants: [
+                        new StellarSdk.Claimant(state.keypair.publicKey(), predicate)
+                    ]
+                }))
+                .setTimeout(30)
+                .build();
+
+                tx.sign(state.keypair);
+                await state.server.submitTransaction(tx);
+
+                showToast("Locked", `${amount} Pi locked for ${days} days.`);
+                document.getElementById('lock-form').reset();
+                await refreshData();
+                switchTab('unlock');
+
+            } catch (e) {
+                console.error(e);
+                showToast("Error", "Locking failed.", "error");
+            } finally {
+                toggleLoader('btn-lock', false);
+            }
+        });
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const pass = document.getElementById('passphrase-input').value.trim();
+            const errorEl = document.getElementById('login-error');
+            
+            if (pass.length < 15) {
+                errorEl.textContent = "Passphrase seems too short.";
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            toggleLoader('btn-login', true);
+            errorEl.classList.add('hidden');
+
+            try {
+                await login(pass);
+            } catch (err) {
+                errorEl.textContent = "Could not access wallet. Please check your passphrase.";
+                errorEl.classList.remove('hidden');
+            } finally {
+                toggleLoader('btn-login', false);
+            }
+        });
+
+    </script>
+</body>
+</html>
