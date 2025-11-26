@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pi Wallet Pro</title>
+    <title>Pi Wallet Pro - Ultimate</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
     <script type="module">
@@ -16,6 +16,7 @@
       window.ed25519HdKey = ed25519HdKey;
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
       tailwind.config = {
@@ -110,7 +111,6 @@
                 <div class="flex items-center gap-3">
                     <div class="h-9 w-9 bg-gradient-to-br from-pi-400 to-pi-600 rounded-full flex items-center justify-center font-bold text-gray-900 shadow-lg shadow-pi-500/20 text-lg">π</div>
                     <span class="font-bold text-xl tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 hidden sm:block">Pi Wallet Pro</span>
-                    <span class="font-bold text-xl tracking-tight text-white sm:hidden">Pi Wallet</span>
                 </div>
                 
                 <div class="flex items-center gap-4">
@@ -142,7 +142,6 @@
                             <textarea id="passphrase-input" rows="3" class="w-full bg-gray-950/50 border border-gray-700 rounded-xl p-4 text-sm focus:ring-2 focus:ring-pi-500 focus:border-transparent outline-none transition-all group-hover:border-gray-600 placeholder-gray-600 resize-none" placeholder="alpha bravo charlie delta..."></textarea>
                         </div>
                         <p id="login-error" class="text-red-400 text-xs mt-3 flex items-center gap-1 hidden">
-                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                             <span id="login-error-text">Invalid passphrase</span>
                         </p>
                     </div>
@@ -150,6 +149,10 @@
                         <span>Unlock Wallet</span>
                         <div class="loader hidden" id="login-loader"></div>
                     </button>
+                    
+                    <div class="text-center pt-2">
+                        <button type="button" onclick="openCreateWalletModal()" class="text-sm text-pi-400 hover:text-pi-300 transition underline underline-offset-4">Create New Wallet</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -208,6 +211,7 @@
 
             <div class="glass rounded-xl p-1.5 flex space-x-2 overflow-x-auto" id="tabs-container">
                 <button onclick="switchTab('history')" id="tab-history" class="tab-active flex-1 py-2.5 px-4 text-sm font-medium rounded-lg transition-all whitespace-nowrap">History</button>
+                <button onclick="switchTab('analytics')" id="tab-analytics" class="tab-inactive flex-1 py-2.5 px-4 text-sm font-medium rounded-lg transition-all whitespace-nowrap">Analytics</button>
                 <button onclick="switchTab('transfer')" id="tab-transfer" class="tab-inactive flex-1 py-2.5 px-4 text-sm font-medium rounded-lg transition-all whitespace-nowrap">Transfer</button>
                 <button onclick="switchTab('unlock')" id="tab-unlock" class="tab-inactive flex-1 py-2.5 px-4 text-sm font-medium rounded-lg transition-all whitespace-nowrap">Claimable</button>
                 <button onclick="switchTab('lock')" id="tab-lock" class="tab-inactive flex-1 py-2.5 px-4 text-sm font-medium rounded-lg transition-all whitespace-nowrap">Lock</button>
@@ -218,11 +222,46 @@
                     <div class="p-4 border-b border-gray-700/50 bg-gray-800/30 flex justify-between items-center">
                         <div>
                             <h3 class="font-semibold text-sm text-gray-300">Transaction History</h3>
-                            <p class="text-xs text-gray-500">Click on any transaction for details</p>
+                            <p class="text-xs text-gray-500">Recent transactions</p>
                         </div>
+                        <button onclick="exportCSV()" class="flex items-center gap-2 px-3 py-1.5 bg-gray-700/50 hover:bg-gray-600 rounded-lg text-xs transition text-gray-300">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            Export CSV
+                        </button>
                     </div>
                     <div id="history-list" class="divide-y divide-gray-800">
                         <div class="p-8 text-center text-gray-500 text-sm">Loading history...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="content-analytics" class="tab-content hidden animate-slide-up">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="glass rounded-2xl p-6 space-y-4">
+                        <h3 class="font-bold text-gray-300 mb-4">Financial Overview</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700/30">
+                                <p class="text-xs text-gray-500 mb-1">Total Received</p>
+                                <p class="text-lg font-bold text-green-400" id="stat-received">0.00 π</p>
+                            </div>
+                            <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700/30">
+                                <p class="text-xs text-gray-500 mb-1">Total Sent</p>
+                                <p class="text-lg font-bold text-red-400" id="stat-sent">0.00 π</p>
+                            </div>
+                        </div>
+                        <div class="h-48 flex items-center justify-center">
+                            <canvas id="flowChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="glass rounded-2xl overflow-hidden flex flex-col">
+                        <div class="p-4 border-b border-gray-700/50 bg-gray-800/30">
+                            <h3 class="font-semibold text-sm text-gray-300">Top Interactions</h3>
+                            <p class="text-xs text-gray-500">Wallets you interact with most</p>
+                        </div>
+                        <div id="interactors-list" class="divide-y divide-gray-800 overflow-y-auto max-h-[300px]">
+                            <div class="p-8 text-center text-gray-500 text-sm">Analyzing transactions...</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -307,6 +346,28 @@
         </div>
     </main>
 
+    <div id="create-modal" class="fixed inset-0 z-[70] hidden flex items-center justify-center px-4">
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="closeCreateWalletModal()"></div>
+        <div class="bg-gray-900 border border-pi-600 rounded-2xl w-full max-w-lg shadow-2xl relative z-10 animate-slide-up p-6">
+            <h3 class="text-xl font-bold text-white mb-4">New Wallet Generated</h3>
+            <div class="bg-red-900/20 border border-red-500/30 p-4 rounded-xl mb-6">
+                <p class="text-red-400 text-xs font-bold uppercase mb-1">Warning</p>
+                <p class="text-sm text-gray-300">Save the following words safely. If you lose them, you lose your wallet forever.</p>
+            </div>
+            
+            <label class="text-xs text-gray-500 font-bold uppercase">Your 24-Word Passphrase</label>
+            <div id="new-mnemonic" class="mt-2 p-4 bg-gray-800 rounded-xl font-mono text-sm text-pi-400 break-words select-all border border-gray-700"></div>
+            
+            <label class="text-xs text-gray-500 font-bold uppercase mt-4 block">Public Key</label>
+            <div id="new-pubkey" class="mt-2 p-3 bg-gray-800 rounded-xl font-mono text-xs text-gray-400 break-all select-all border border-gray-700"></div>
+
+            <div class="flex gap-4 mt-8">
+                <button onclick="copyText(document.getElementById('new-mnemonic').textContent, 'Passphrase')" class="flex-1 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-xl text-sm font-bold transition">Copy Passphrase</button>
+                <button onclick="closeCreateWalletModal()" class="flex-1 py-3 bg-pi-600 hover:bg-pi-700 text-white rounded-xl text-sm font-bold transition">I Saved It</button>
+            </div>
+        </div>
+    </div>
+
     <div id="tx-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center px-4">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeModal()"></div>
         <div class="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg shadow-2xl relative z-10 animate-slide-up transform transition-all">
@@ -367,7 +428,9 @@
             keypair: null,
             server: null,
             account: null,
-            isTestnet: false
+            isTestnet: false,
+            transactions: [], // Cache for history and analytics
+            chartInstance: null
         };
 
         // Initialize Server
@@ -392,16 +455,154 @@
                 showToast("Network Changed", "Switched to Mainnet");
             }
             
-            // Re-initialize server with new config
             state.server = new StellarSdk.Horizon.Server(CONFIG.url);
-            
-            // Refresh data if logged in
             if(state.keypair) {
                 await refreshData();
             }
         });
 
-        // --- UI FUNCTIONS ---
+        // --- CREATE WALLET ---
+        async function openCreateWalletModal() {
+            const modal = document.getElementById('create-modal');
+            const mnemonicEl = document.getElementById('new-mnemonic');
+            const pubKeyEl = document.getElementById('new-pubkey');
+            
+            // Generate Random Mnemonic (256 bits = 24 words)
+            const mnemonic = await window.webBip39.generateMnemonic(256);
+            
+            // Derive Keys to show Public Key
+            const seed = await window.webBip39.mnemonicToSeed(mnemonic);
+            const derived = window.ed25519HdKey.derivePath("m/44'/314159'/0'", new Uint8Array(seed));
+            const kp = StellarSdk.Keypair.fromRawEd25519Seed(Uint8Array.from(derived.key));
+
+            mnemonicEl.textContent = mnemonic;
+            pubKeyEl.textContent = kp.publicKey();
+            
+            modal.classList.remove('hidden');
+        }
+
+        function closeCreateWalletModal() {
+            document.getElementById('create-modal').classList.add('hidden');
+        }
+
+        // --- ANALYTICS & EXPORT ---
+        function updateAnalytics() {
+            if(!state.transactions || state.transactions.length === 0) return;
+
+            let totalSent = 0;
+            let totalReceived = 0;
+            const interactors = {}; // { publicKey: count }
+
+            state.transactions.forEach(tx => {
+                if(tx.type !== 'payment' && tx.type !== 'create_account') return;
+
+                const isReceived = tx.type === 'create_account' ? true : (tx.to === state.keypair.publicKey());
+                const amount = parseFloat(tx.type === 'create_account' ? tx.starting_balance : tx.amount);
+                const otherParty = isReceived ? (tx.from || "Genesis") : tx.to;
+
+                if(isReceived) {
+                    totalReceived += amount;
+                } else {
+                    totalSent += amount;
+                }
+
+                // Track Interactions
+                if(otherParty !== "Genesis") {
+                    interactors[otherParty] = (interactors[otherParty] || 0) + 1;
+                }
+            });
+
+            // Update DOM Stats
+            document.getElementById('stat-received').textContent = totalReceived.toFixed(2) + " π";
+            document.getElementById('stat-sent').textContent = totalSent.toFixed(2) + " π";
+
+            // Render Chart
+            renderChart(totalReceived, totalSent);
+
+            // Render Interactors List
+            const sortedInteractors = Object.entries(interactors).sort((a,b) => b[1] - a[1]).slice(0, 10);
+            const listEl = document.getElementById('interactors-list');
+            listEl.innerHTML = '';
+            
+            if(sortedInteractors.length === 0) {
+                 listEl.innerHTML = '<div class="p-8 text-center text-gray-500 text-sm">No interactions yet</div>';
+            } else {
+                sortedInteractors.forEach(([key, count]) => {
+                    const div = document.createElement('div');
+                    div.className = "p-4 flex justify-between items-center hover:bg-gray-700/20";
+                    div.innerHTML = `
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <div class="p-2 bg-gray-800 rounded-lg text-gray-400 font-bold text-xs">${count}x</div>
+                            <p class="text-xs font-mono text-gray-400 truncate w-40 sm:w-60 cursor-pointer hover:text-white" onclick="copyText('${key}', 'Address')">${key}</p>
+                        </div>
+                    `;
+                    listEl.appendChild(div);
+                });
+            }
+        }
+
+        function renderChart(received, sent) {
+            const ctx = document.getElementById('flowChart').getContext('2d');
+            
+            if(state.chartInstance) {
+                state.chartInstance.destroy();
+            }
+
+            state.chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Received', 'Sent'],
+                    datasets: [{
+                        data: [received, sent],
+                        backgroundColor: ['#4ade80', '#f87171'], // Green, Red
+                        borderColor: '#1f2937',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#9ca3af' } }
+                    }
+                }
+            });
+        }
+
+        function exportCSV() {
+            if(!state.transactions || state.transactions.length === 0) {
+                showToast("Error", "No history to export", "error");
+                return;
+            }
+
+            // CSV Header
+            let csvContent = "data:text/csv;charset=utf-8,Type,Date,Amount,From,To,Hash,Memo\n";
+
+            state.transactions.forEach(tx => {
+                if(tx.type !== 'payment' && tx.type !== 'create_account') return;
+
+                const isReceived = tx.type === 'create_account' ? true : (tx.to === state.keypair.publicKey());
+                const type = isReceived ? "RECEIVED" : "SENT";
+                const amount = tx.type === 'create_account' ? tx.starting_balance : tx.amount;
+                const date = new Date(tx.created_at).toISOString();
+                const from = tx.from || "Genesis";
+                const to = tx.to || "N/A";
+                const memo = tx.memo || "";
+
+                const row = `${type},${date},${amount},${from},${to},${tx.transaction_hash},${memo}`;
+                csvContent += row + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "pi_wallet_history.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- UI UTILS ---
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('#tabs-container button').forEach(btn => {
@@ -485,14 +686,14 @@
             }
         }
 
-        // --- QR MODAL LOGIC ---
+        // --- QR MODAL ---
         function openQRModal() {
             if(!state.keypair) return;
             const modal = document.getElementById('qr-modal');
             const qrContainer = document.getElementById('qrcode');
             const addressText = document.getElementById('qr-address');
             
-            qrContainer.innerHTML = ''; // Clear previous
+            qrContainer.innerHTML = '';
             addressText.textContent = state.keypair.publicKey();
             
             new QRCode(qrContainer, {
@@ -511,7 +712,7 @@
             document.getElementById('qr-modal').classList.add('hidden');
         }
 
-        // --- TX MODAL LOGIC ---
+        // --- TX MODAL ---
         function closeModal() {
             document.getElementById('tx-modal').classList.add('hidden');
         }
@@ -569,7 +770,6 @@
                     </div>
                 `;
                 
-                // Adjust explorer link based on network
                 const baseUrl = state.isTestnet ? 'https://blockexplorer.minepi.com/testnet/transactions/' : 'https://blockexplorer.minepi.com/mainnet/transactions/';
                 explorerLink.href = baseUrl + txHash;
 
@@ -579,15 +779,13 @@
             }
         }
 
-        // --- CORE LOGIC ---
+        // --- DATA LOADING ---
 
         async function refreshData() {
             if (!state.keypair) return;
             
             try {
-                // Clear previous data visually
                 document.getElementById('display-balance').textContent = "...";
-                
                 state.account = await state.server.loadAccount(state.keypair.publicKey());
                 const bal = state.account.balances.find(b => b.asset_type === 'native');
                 document.getElementById('display-balance').textContent = bal ? parseFloat(bal.balance).toFixed(2) : "0.00";
@@ -630,15 +828,29 @@
         async function loadHistory() {
             const container = document.getElementById('history-list');
             try {
-                const response = await state.server.payments().forAccount(state.keypair.publicKey()).limit(15).order('desc').call();
+                // Fetch 100 for better analytics
+                const response = await state.server.payments().forAccount(state.keypair.publicKey()).limit(100).order('desc').call();
                 
                 if (response.records.length === 0) {
                     container.innerHTML = '<div class="p-8 text-center text-gray-500 text-sm">No transactions found</div>';
+                    state.transactions = [];
+                    updateAnalytics();
                     return;
                 }
 
+                // Process Transactions
+                state.transactions = response.records.map(p => {
+                    return {
+                        ...p,
+                        // Helper to find 'to' and 'from' easier for payment ops
+                        to: p.type === 'create_account' ? p.account : p.to,
+                        from: p.type === 'create_account' ? p.funder : p.from
+                    }
+                });
+
+                // Render First 15 for List
                 let html = '';
-                response.records.forEach(p => {
+                state.transactions.slice(0, 15).forEach(p => {
                     if (p.type !== 'payment' && p.type !== 'create_account') return;
 
                     const isReceived = p.type === 'create_account' ? true : (p.to === state.keypair.publicKey());
@@ -670,8 +882,12 @@
                     </div>`;
                 });
                 container.innerHTML = html;
+                
+                // Trigger Analytics Update
+                updateAnalytics();
+
             } catch (e) {
-                // container.innerHTML = '<div class="p-8 text-center text-gray-500 text-sm">Failed to load history</div>';
+                console.error(e);
             }
         }
 
